@@ -1,48 +1,64 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Capabilities;
 using CounterStrikeSharp.API.Modules.Entities.Constants;
 using CounterStrikeSharp.API.Modules.Menu;
+using CounterStrikeSharp.API.Modules.Utils;
+using WASDSharedAPI;
 
 namespace QuickDefuse;
 
 public class QuickDefuse : BasePlugin
 {
     public override string ModuleName => "QuickDefuse";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Interesting";
 
-    public Dictionary<int, int> Wire = new();
-    public string[] colors = { "Red", "Blue", "Green", "Yellow"};
+    public static LinkedList<CenterHtmlMenu> Menus = new();
+    public int Wire;
+    public string[] Colors = { "Red", "Blue", "Green", "Yellow"};
+    public char[] ChatColorsArray = { ChatColors.Red, ChatColors.Blue, ChatColors.Green, ChatColors.Yellow };
+    public static IWasdMenuManager? MenuManager;
     
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventBombBegindefuse>(OnBombBeginDefuse);
     }
 
-    public CenterHtmlMenu CreateMenu()
+    public IWasdMenuManager? GetMenuManager()
     {
-        CenterHtmlMenu menu = new ("Guess a wire to instantly defuse the bomb", this);
-        for (int i = 0; i < colors.Length; i++)
+        if (MenuManager == null)
+            MenuManager = new PluginCapability<IWasdMenuManager>("wasdmenu:manager").Get();
+
+        return MenuManager;
+    }
+    
+    public IWasdMenu? CreateMenu()
+    {
+        var menuManager = GetMenuManager();
+        IWasdMenu? menu = menuManager?.CreateMenu("Guess a wire to instantly defuse the bomb");
+        for (int i = 0; i < Colors.Length; i++)
         {
             int choice = i;
-            menu.AddMenuOption($"{colors[i]} wire", (controller, option) =>
+            menu?.Add($"{Colors[i]} wire", (controller, option) =>
             {
                 var bomb = Utilities.FindAllEntitiesByDesignerName<CPlantedC4>("planted_c4").ToList().FirstOrDefault();
                 if (bomb == null)
                     return;
-                if (Wire[controller.Slot] == choice)
+                if (Wire == choice)
                 {
                     Server.NextFrame(() =>
                     {
-                        var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules!;
-                        gameRules.TerminateRound(0 , RoundEndReason.BombDefused);
+                        bomb.DefuseCountDown = 0.0f;
+                        Server.PrintToChatAll($" {ChatColors.Blue}[QuickDefuse]{ChatColors.White} {controller.PlayerName} just defused the bomb by cutting the{ChatColorsArray[Wire]} {Colors[Wire]} wire!");
                     });
                 }
                 else
                 {
                     bomb.C4Blow = 1.0f;
+                    Server.PrintToChatAll($" {ChatColors.Blue}[QuickDefuse]{ChatColors.White} {controller.PlayerName} just detonated the bomb by cutting the{ChatColorsArray[Wire]} {Colors[Wire]} wire!");
                 }
-                MenuManager.CloseActiveMenu(controller);
+                menuManager?.CloseMenu(controller);
             });
         }
         return menu;
@@ -52,9 +68,8 @@ public class QuickDefuse : BasePlugin
     {
         if (@event.Userid == null)
             return HookResult.Continue;
-        Wire[@event.Userid.Slot] = new Random().Next(0, colors.Length);
-        MenuManager.OpenCenterHtmlMenu(this, @event.Userid, CreateMenu());
-        
+        Wire = new Random().Next(0, Int32.MaxValue) % Colors.Length;
+        GetMenuManager()?.OpenMainMenu(@event.Userid, CreateMenu());
         return HookResult.Continue;
     }
     
