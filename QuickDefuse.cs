@@ -36,7 +36,7 @@ public class QuickDefuse : BasePlugin
     public IWasdMenu? CreateMenu()
     {
         var menuManager = GetMenuManager();
-        IWasdMenu? menu = menuManager?.CreateMenu("Guess a wire to instantly defuse the bomb");
+        IWasdMenu? menu = menuManager?.CreateMenu("Guess a wire to defuse the bomb!");
         for (int i = 0; i < Colors.Length; i++)
         {
             int choice = i;
