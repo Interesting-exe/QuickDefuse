@@ -9,7 +9,7 @@ namespace QuickDefuse;
 public class QuickDefuse : BasePlugin
 {
     public override string ModuleName => "QuickDefuse";
-    public override string ModuleVersion => "1.0.1";
+    public override string ModuleVersion => "1.0.2";
     public override string ModuleAuthor => "Interesting";
 
     public int Wire;
