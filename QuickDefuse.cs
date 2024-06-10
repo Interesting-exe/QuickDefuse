@@ -1,8 +1,6 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Core.Capabilities;
-using CounterStrikeSharp.API.Modules.Entities.Constants;
-using CounterStrikeSharp.API.Modules.Menu;
 using CounterStrikeSharp.API.Modules.Utils;
 using WASDSharedAPI;
 
@@ -14,7 +12,6 @@ public class QuickDefuse : BasePlugin
     public override string ModuleVersion => "1.0.1";
     public override string ModuleAuthor => "Interesting";
 
-    public static LinkedList<CenterHtmlMenu> Menus = new();
     public int Wire;
     public string[] Colors = { "Red", "Blue", "Green", "Yellow"};
     public char[] ChatColorsArray = { ChatColors.Red, ChatColors.Blue, ChatColors.Green, ChatColors.Yellow };
@@ -23,6 +20,12 @@ public class QuickDefuse : BasePlugin
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventBombBegindefuse>(OnBombBeginDefuse);
+        RegisterEventHandler<EventBombAbortdefuse>((@event, info) =>
+        {
+            var menuManager = GetMenuManager();
+            menuManager?.CloseMenu(@event.Userid);
+            return HookResult.Continue;
+        });
     }
 
     public IWasdMenuManager? GetMenuManager()
@@ -32,7 +35,7 @@ public class QuickDefuse : BasePlugin
 
         return MenuManager;
     }
-    
+
     public IWasdMenu? CreateMenu()
     {
         var menuManager = GetMenuManager();
@@ -72,6 +75,4 @@ public class QuickDefuse : BasePlugin
         GetMenuManager()?.OpenMainMenu(@event.Userid, CreateMenu());
         return HookResult.Continue;
     }
-    
-    
 }
