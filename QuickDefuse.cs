@@ -9,21 +9,40 @@ namespace QuickDefuse;
 public class QuickDefuse : BasePlugin
 {
     public override string ModuleName => "QuickDefuse";
-    public override string ModuleVersion => "1.0.2";
+    public override string ModuleVersion => "1.0.3";
     public override string ModuleAuthor => "Interesting";
 
     public int Wire;
     public string[] Colors = { "Red", "Blue", "Green", "Yellow"};
     public char[] ChatColorsArray = { ChatColors.Red, ChatColors.Blue, ChatColors.Green, ChatColors.Yellow };
     public static IWasdMenuManager? MenuManager;
+    public static CCSPlayerController? Defuser;
     
     public override void Load(bool hotReload)
     {
         RegisterEventHandler<EventBombBegindefuse>(OnBombBeginDefuse);
         RegisterEventHandler<EventBombAbortdefuse>((@event, info) =>
         {
+            Defuser = null;
             var menuManager = GetMenuManager();
             menuManager?.CloseMenu(@event.Userid);
+            return HookResult.Continue;
+        });
+        RegisterEventHandler<EventBombDefused>((@event, info) =>
+        {
+            Defuser = null;
+            var menuManager = GetMenuManager();
+            menuManager?.CloseMenu(@event.Userid);
+            return HookResult.Continue;
+        });
+        RegisterEventHandler<EventBombExploded>((@event, info) =>
+        {
+            if (Defuser != null)
+            {
+                var menuManager = GetMenuManager();
+                menuManager?.CloseMenu(Defuser);
+                Defuser = null;
+            }
             return HookResult.Continue;
         });
     }
@@ -69,8 +88,9 @@ public class QuickDefuse : BasePlugin
     
     public HookResult OnBombBeginDefuse(EventBombBegindefuse @event, GameEventInfo info)
     {
-        if (@event.Userid == null)
+        if (@event.Userid == null || @event.Userid.IsBot)
             return HookResult.Continue;
+        Defuser = @event.Userid;
         Wire = new Random().Next(0, Int32.MaxValue) % Colors.Length;
         GetMenuManager()?.OpenMainMenu(@event.Userid, CreateMenu());
         return HookResult.Continue;
